@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from email_validator import validate_email, EmailNotValidError
 import dns.resolver
 import socket
+import os
 
 app = FastAPI(
     title="Disposable & Fake Email Detection API",
@@ -10,8 +11,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Load disposable email domains
-with open("disposable_domains.txt") as f:
+# Load disposable email domains using absolute path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+domains_file = os.path.join(BASE_DIR, "disposable_domains.txt")
+
+with open(domains_file) as f:
     DISPOSABLE_DOMAINS = set(d.strip().lower() for d in f if d.strip())
 
 class EmailRequest(BaseModel):
@@ -35,6 +39,14 @@ def is_catch_all(domain: str) -> bool:
         return True
     except Exception:
         return False
+
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "Email Validator API is running"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
 
 @app.post("/check-email")
 def check_email(data: EmailRequest):
